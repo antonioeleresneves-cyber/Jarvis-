@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS — Sistema de Inteligência</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --bg: #020c1b;
+    --bg2: #050f1f;
+    --cyan: #00d4ff;
+    --cyan-dim: #0099bb;
+    --cyan-glow: rgba(0,212,255,0.15);
+    --red: #ff3c3c;
+    --green: #00ff88;
+    --text: #a8d8f0;
+    --text-dim: #4a7a99;
+    --panel: rgba(0,30,50,0.85);
+    --border: rgba(0,212,255,0.25);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scan line effect */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(transparent, rgba(0,212,255,0.4), transparent);
+    animation: scanline 6s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  @keyframes scanline {
+    0% { top: -3px; }
+    100% { top: 100%; }
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 860px;
+    padding: 20px 16px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 28px 0 16px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    color: var(--cyan);
+    text-shadow:
+      0 0 20px rgba(0,212,255,0.8),
+      0 0 60px rgba(0,212,255,0.4),
+      0 0 100px rgba(0,212,255,0.2);
+    animation: pulse-logo 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-logo {
+    0%, 100% { text-shadow: 0 0 20px rgba(0,212,255,0.8), 0 0 60px rgba(0,212,255,0.4); }
+    50% { text-shadow: 0 0 30px rgba(0,212,255,1), 0 0 80px rgba(0,212,255,0.6), 0 0 120px rgba(0,212,255,0.3); }
+  }
+
+  .subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    color: var(--text-dim);
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+
+  .status-bar {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 14px;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: blink 2s ease-in-out infinite;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Arc reactor / orb visualizer */
+  .orb-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0;
+  }
+
+  .orb-wrapper {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .orb-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+  }
+
+  .orb-ring:nth-child(1) {
+    width: 160px; height: 160px;
+    border-color: rgba(0,212,255,0.15);
+    animation: spin-slow 12s linear infinite;
+  }
+
+  .orb-ring:nth-child(2) {
+    width: 130px; height: 130px;
+    border-color: rgba(0,212,255,0.2);
+    border-style: dashed;
+    animation: spin-slow 8s linear infinite reverse;
+  }
+
+  .orb-ring:nth-child(3) {
+    width: 100px; height: 100px;
+    border-color: rgba(0,212,255,0.3);
+    animation: spin-slow 5s linear infinite;
+  }
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .orb-core {
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.3) 0%, rgba(0,50,80,0.8) 70%, transparent 100%);
+    border: 2px solid var(--cyan);
+    box-shadow: 0 0 20px rgba(0,212,255,0.5), inset 0 0 20px rgba(0,212,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+  }
+
+  .orb-core.listening {
+    background: radial-gradient(circle, rgba(0,255,136,0.4) 0%, rgba(0,50,30,0.8) 70%, transparent 100%);
+    border-color: var(--green);
+    box-shadow: 0 0 30px rgba(0,255,136,0.7), inset 0 0 20px rgba(0,255,136,0.2);
+    animation: orb-pulse 0.8s ease-in-out infinite;
+  }
+
+  .orb-core.speaking {
+    background: radial-gradient(circle, rgba(255,180,0,0.4) 0%, rgba(50,30,0,0.8) 70%, transparent 100%);
+    border-color: #ffb400;
+    box-shadow: 0 0 30px rgba(255,180,0,0.7), inset 0 0 20px rgba(255,180,0,0.2);
+    animation: orb-pulse 0.4s ease-in-out infinite;
+  }
+
+  @keyframes orb-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+
+  .orb-icon {
+    font-size: 1.6rem;
+    filter: drop-shadow(0 0 8px var(--cyan));
+  }
+
+  .orb-label {
+    text-align: center;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    margin-top: 8px;
+    text-transform: uppercase;
+  }
+
+  /* Audio visualizer bars */
+  .visualizer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 3px;
+    height: 40px;
+    margin-top: 12px;
+  }
+
+  .viz-bar {
+    width: 4px;
+    background: var(--cyan);
+    border-radius: 2px;
+    opacity: 0.4;
+    height: 4px;
+    transition: height 0.1s;
+    box-shadow: 0 0 4px var(--cyan);
+  }
+
+  .viz-bar.active {
+    opacity: 1;
+    animation: viz-dance 0.3s ease-in-out infinite alternate;
+  }
+
+  @keyframes viz-dance {
+    from { height: var(--min-h, 4px); }
+    to { height: var(--max-h, 30px); }
+  }
+
+  /* State label */
+  .state-label {
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    display: inline-block;
+    color: var(--cyan);
+    margin: 0 auto;
+    min-width: 200px;
+    background: var(--cyan-glow);
+    transition: all 0.3s;
+  }
+
+  .state-label.listening { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.1); }
+  .state-label.speaking { border-color: #ffb400; color: #ffb400; background: rgba(255,180,0,0.1); }
+
+  /* Chat panel */
+  .chat-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(0,212,255,0.05);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--cyan);
+    text-transform: uppercase;
+  }
+
+  .panel-dot { width:5px; height:5px; border-radius:50%; }
+  .dot-red { background: var(--red); box-shadow: 0 0 4px var(--red); }
+  .dot-yel { background: #ffb400; box-shadow: 0 0 4px #ffb400; }
+  .dot-grn { background: var(--green); box-shadow: 0 0 4px var(--green); }
+
+  .chat-messages {
+    min-height: 280px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+  }
+
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 2px; }
+
+  .msg {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 88%;
+    animation: msg-appear 0.3s ease;
+  }
+
+  @keyframes msg-appear {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.jarvis { align-self: flex-start; align-items: flex-start; }
+
+  .msg-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .msg-bubble {
+    padding: 10px 14px;
+    border-radius: 2px;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  .msg.user .msg-bubble {
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.3);
+    color: #cce8f4;
+    border-bottom-right-radius: 0;
+  }
+
+  .msg.jarvis .msg-bubble {
+    background: rgba(0,255,136,0.05);
+    border: 1px solid rgba(0,255,136,0.25);
+    color: #b8f4d4;
+    border-bottom-left-radius: 0;
+  }
+
+  /* Data card styling inside messages */
+  .data-card {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.8;
+  }
+
+  .data-card .field { color: var(--cyan-dim); }
+  .data-card .value { color: #e0f7ff; font-weight: bold; }
+  .data-card .sem { color: var(--text-dim); }
+
+  /* Typing indicator */
+  .typing {
+    display: flex;
+    gap: 5px;
+    padding: 10px 14px;
+    background: rgba(0,255,136,0.05);
+    border: 1px solid rgba(0,255,136,0.25);
+    align-items: center;
+    width: fit-content;
+  }
+
+  .typing span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: typing-dot 1.2s ease-in-out infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typing-dot {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Input row */
+  .input-row {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+    background: rgba(0,10,20,0.5);
+  }
+
+  .text-input {
+    flex: 1;
+    background: rgba(0,212,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.82rem;
+    padding: 8px 12px;
+    outline: none;
+    border-radius: 2px;
+    transition: border-color 0.2s;
+  }
+
+  .text-input:focus { border-color: var(--cyan); }
+  .text-input::placeholder { color: var(--text-dim); }
+
+  .btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    padding: 8px 14px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    border-radius: 2px;
+  }
+
+  .btn:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: var(--cyan-glow);
+  }
+
+  .btn.btn-mic {
+    border-color: rgba(0,255,136,0.3);
+    color: var(--green);
+  }
+
+  .btn.btn-mic:hover, .btn.btn-mic.active {
+    background: rgba(0,255,136,0.1);
+    border-color: var(--green);
+    box-shadow: 0 0 12px rgba(0,255,136,0.3);
+  }
+
+  .btn.btn-mic.recording {
+    background: rgba(0,255,136,0.15);
+    border-color: var(--green);
+    box-shadow: 0 0 16px rgba(0,255,136,0.4);
+    animation: mic-pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(0,255,136,0.4); }
+    50% { box-shadow: 0 0 28px rgba(0,255,136,0.7); }
+  }
+
+  /* Wake word hint */
+  .hint {
+    text-align: center;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    padding: 6px 0;
+  }
+
+  .hint strong {
+    color: var(--cyan);
+    text-shadow: 0 0 8px rgba(0,212,255,0.5);
+  }
+
+  /* Corner decorations */
+  .corner-tl, .corner-br {
+    position: absolute;
+    width: 12px; height: 12px;
+  }
+
+  .corner-tl {
+    top: 0; left: 0;
+    border-top: 2px solid var(--cyan);
+    border-left: 2px solid var(--cyan);
+  }
+
+  .corner-br {
+    bottom: 0; right: 0;
+    border-bottom: 2px solid var(--cyan);
+    border-right: 2px solid var(--cyan);
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    padding: 40px 20px;
+  }
+
+  .empty-icon { font-size: 2rem; opacity: 0.3; }
+
+  /* Notification toast */
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--panel);
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    padding: 10px 16px;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    z-index: 100;
+    animation: toast-in 0.3s ease;
+    box-shadow: 0 0 20px rgba(0,212,255,0.2);
+  }
+
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .center-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo">JARVIS</div>
+    <div class="subtitle">Just A Rather Very Intelligent System</div>
+    <div class="status-bar">
+      <span><span class="status-dot"></span>SISTEMA ONLINE</span>
+      <span><span class="status-dot" style="background:#ffb400;box-shadow:0 0 6px #ffb400"></span>IA CONECTADA</span>
+      <span><span class="status-dot" style="animation-delay:0.5s"></span>ELEVENLABS ATIVO</span>
+    </div>
+  </header>
+
+  <!-- Orb + Visualizer -->
+  <div class="center-controls">
+    <div class="orb-section">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+        <div class="orb-wrapper" id="orbWrapper">
+          <div class="orb-ring"></div>
+          <div class="orb-ring"></div>
+          <div class="orb-ring"></div>
+          <div class="orb-core" id="orbCore">
+            <span class="orb-icon" id="orbIcon">🤖</span>
+          </div>
+        </div>
+        <div class="orb-label" id="orbLabel">Aguardando "Jarvis"</div>
+        <div class="visualizer" id="visualizer">
+          <!-- bars inserted by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="state-label" id="stateLabel">MODO STANDBY — DIGA "JARVIS" PARA ATIVAR</div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-panel" style="position:relative;">
+    <div class="corner-tl"></div>
+    <div class="corner-br"></div>
+    <div class="panel-header">
+      <div class="panel-dot dot-red"></div>
+      <div class="panel-dot dot-yel"></div>
+      <div class="panel-dot dot-grn"></div>
+      <span style="margin-left:8px;">CONSOLE DE COMUNICAÇÃO — JARVIS v4.1</span>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🎙️</div>
+        <div>Diga <strong style="color:var(--cyan)">"Jarvis"</strong> para iniciar</div>
+        <div style="font-size:0.6rem;color:var(--text-dim)">ou ative o microfone abaixo</div>
+      </div>
+    </div>
+    <div class="input-row">
+      <input class="text-input" id="textInput" type="text" placeholder='Digite ou diga "Jarvis" para usar o microfone...' />
+      <button class="btn btn-mic" id="micBtn" onclick="toggleMic()">🎤 MIC</button>
+      <button class="btn" onclick="sendText()">ENVIAR</button>
+    </div>
+  </div>
+
+  <div class="hint">Diga <strong>"Jarvis"</strong> para ativar o reconhecimento de voz · Fale normalmente após a ativação</div>
+</div>
+
+<script>
+// ─── CONFIG ────────────────────────────────────────────────────
+const ELEVENLABS_KEY = '80f20c0648bd28e0f7c7c77c6d41551f5e5e03109f94f40a9bf0176a981e5b8f';
+const VOICE_ID = 'sB7vwSCyX0tQmU24cW2C';
+const ANTHROPIC_PROXY = 'https://api.anthropic.com/v1/messages';
+
+// ─── PERSON DATABASE ───────────────────────────────────────────
+const PEOPLE_DB = {
+  'antonio': {
+    display: `NOME: ANTONIO EDUARDO ELERES DAS NEVES\nCPF: 054.803.422-23\nSEXO: M\nNASCIMENTO: 10/12/2010\nNOME DA MÃE: Tamara de Lima Eleres\nESTADO CIVIL: SEM RESULTADO\nRG: SEM RESULTADO\nCBO: SEM RESULTADO\nÓRGÃO EMISSOR: SEM RESULTADO\nUF EMISSOR: SEM RESULTADO\nDATA ÓBITO: SEM RESULTADO\nRENDA: 0 reais`,
+    speech: `Encontrei os dados de Antonio Eduardo Eleres das Neves. Nome completo: Antonio Eduardo Eleres das Neves. CPF: 054.803.422-23. Sexo masculino. Data de nascimento: 10 de dezembro de 2010. Nome da mãe: Tamara de Lima Eleres. Renda: zero reais. Demais campos sem resultado.`,
+    keywords: ['antonio', 'antonio eduardo', 'eleres das neves', 'antonio eleres']
+  },
+  'tamara': {
+    display: `NOME: TAMARA DE LIMA ELERES\nCPF: 016.447.892-21\nSEXO: F\nNASCIMENTO: 26/03/1993\nNOME DA MÃE: MARIA DA PAZ PINTO DE LIMA\nNOME DO PAI: ADEMIR PINHEIRO ELERES\nESTADO CIVIL: SEM RESULTADO\nRG: SEM RESULTADO\nCBO: SEM RESULTADO\nÓRGÃO EMISSOR: SEM RESULTADO\nUF EMISSOR: SEM RESULTADO\nDATA ÓBITO: SEM RESULTADO\nRENDA: 576,95`,
+    speech: `Encontrei os dados de Tamara de Lima Eleres. Nome completo: Tamara de Lima Eleres. CPF: 016.447.892-21. Sexo feminino. Data de nascimento: 26 de março de 1993. Nome da mãe: Maria da Paz Pinto de Lima. Nome do pai: Ademir Pinheiro Eleres. Renda: 576 reais e 95 centavos.`,
+    keywords: ['tamara', 'tamara de lima', 'tamara eleres', 'lima eleres']
+  },
+  'jacimara': {
+    display: `NOME: JACIMARA PINTO DE LIMA\nCPF: 655.948.432-72\nSEXO: F\nNASCIMENTO: 20/10/1974\nNOME DA MÃE: MARIA DA PAZ PINTO DE LIMA\nNOME DO PAI: JAIRO TEIXEIRA DE LIMA\nESTADO CIVIL: SEM RESULTADO\nRG: 2847111\nCBO: SEM RESULTADO\nÓRGÃO EMISSOR: SSP\nUF EMISSOR: SEM RESULTADO\nDATA ÓBITO: SEM RESULTADO\nRENDA: SEM RESULTADO\nTÍTULO DE ELEITOR: SEM RESULTADO`,
+    speech: `Encontrei os dados de Jacimara Pinto de Lima. Nome completo: Jacimara Pinto de Lima. CPF: 655.948.432-72. Sexo feminino. Data de nascimento: 20 de outubro de 1974. Nome da mãe: Maria da Paz Pinto de Lima. Nome do pai: Jairo Teixeira de Lima. RG: 2847111, órgão emissor SSP.`,
+    keywords: ['jacimara', 'jacimara pinto', 'pinto de lima', 'jacimara lima']
+  }
+};
+
+// ─── STATE ─────────────────────────────────────────────────────
+let isListening = false;
+let wakeWordDetected = false;
+let recognition = null;
+let currentAudio = null;
+let isSpeaking = false;
+let vizAnimFrame = null;
+let vizBars = [];
+let analyser = null;
+let audioCtx = null;
+
+// ─── BUILD VISUALIZER ──────────────────────────────────────────
+const vizEl = document.getElementById('visualizer');
+const BAR_COUNT = 20;
+for (let i = 0; i < BAR_COUNT; i++) {
+  const b = document.createElement('div');
+  b.className = 'viz-bar';
+  const minH = 3 + Math.random() * 4;
+  const maxH = 10 + Math.random() * 22;
+  b.style.setProperty('--min-h', minH + 'px');
+  b.style.setProperty('--max-h', maxH + 'px');
+  b.style.animationDelay = (Math.random() * 0.6) + 's';
+  b.style.animationDuration = (0.2 + Math.random() * 0.4) + 's';
+  vizEl.appendChild(b);
+  vizBars.push(b);
+}
+
+// ─── UI HELPERS ────────────────────────────────────────────────
+function setState(state) {
+  const orb = document.getElementById('orbCore');
+  const label = document.getElementById('stateLabel');
+  const icon = document.getElementById('orbIcon');
+  const orbLbl = document.getElementById('orbLabel');
+
+  orb.className = 'orb-core';
+  label.className = 'state-label';
+  vizBars.forEach(b => b.classList.remove('active'));
+
+  if (state === 'standby') {
+    icon.textContent = '🤖';
+    label.textContent = 'MODO STANDBY — DIGA "JARVIS" PARA ATIVAR';
+    orbLbl.textContent = 'Aguardando "Jarvis"';
+  } else if (state === 'listening') {
+    orb.classList.add('listening');
+    label.classList.add('listening');
+    icon.textContent = '🎙️';
+    label.textContent = 'OUVINDO — PODE FALAR...';
+    orbLbl.textContent = 'Ouvindo você...';
+    vizBars.forEach(b => b.classList.add('active'));
+  } else if (state === 'thinking') {
+    icon.textContent = '⚡';
+    label.textContent = 'PROCESSANDO DADOS...';
+    orbLbl.textContent = 'Processando...';
+  } else if (state === 'speaking') {
+    orb.classList.add('speaking');
+    label.classList.add('speaking');
+    icon.textContent = '🔊';
+    label.textContent = 'JARVIS FALANDO...';
+    orbLbl.textContent = 'Respondendo...';
+    vizBars.forEach(b => b.classList.add('active'));
+  }
+}
+
+function showToast(msg, color = 'var(--cyan)') {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.style.borderColor = color;
+  t.style.color = color;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function addMessage(role, content, isData = false) {
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.remove();
+
+  const msgs = document.getElementById('chatMessages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + (role === 'user' ? 'user' : 'jarvis');
+
+  const lbl = document.createElement('div');
+  lbl.className = 'msg-label';
+  lbl.textContent = role === 'user' ? '▶ VOCÊ' : '◀ JARVIS';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+
+  if (isData) {
+    bubble.innerHTML = formatDataCard(content);
+  } else {
+    bubble.textContent = content;
+  }
+
+  wrap.appendChild(lbl);
+  wrap.appendChild(bubble);
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTyping() {
+  const msgs = document.getElementById('chatMessages');
+  const t = document.createElement('div');
+  t.className = 'msg jarvis';
+  t.id = 'typingMsg';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'msg-label';
+  lbl.textContent = '◀ JARVIS';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'typing';
+  bubble.innerHTML = '<span></span><span></span><span></span>';
+
+  t.appendChild(lbl);
+  t.appendChild(bubble);
+  msgs.appendChild(t);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typingMsg');
+  if (t) t.remove();
+}
+
+function formatDataCard(text) {
+  const lines = text.split('\n');
+  return '<div class="data-card">' + lines.map(line => {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) return `<div>${line}</div>`;
+    const field = line.substring(0, colonIdx);
+    const value = line.substring(colonIdx + 1).trim();
+    const valClass = value === 'SEM RESULTADO' ? 'sem' : 'value';
+    return `<div><span class="field">${field}:</span> <span class="${valClass}">${value || 'SEM RESULTADO'}</span></div>`;
+  }).join('') + '</div>';
+}
+
+// ─── PERSON LOOKUP ─────────────────────────────────────────────
+function findPerson(query) {
+  const q = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (const [key, person] of Object.entries(PEOPLE_DB)) {
+    for (const kw of person.keywords) {
+      const kwn = kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (q.includes(kwn)) return person;
+    }
+  }
+  return null;
+}
+
+function isPersonQuery(text) {
+  const keywords = ['dados', 'fale', 'informações', 'quem é', 'cpf', 'nome', 'nascimento', 'sobre'];
+  const tl = text.toLowerCase();
+  return keywords.some(k => tl.includes(k)) || PEOPLE_DB.antonio.keywords.some(k => tl.toLowerCase().includes(k.toLowerCase()))
+    || PEOPLE_DB.tamara.keywords.some(k => tl.toLowerCase().includes(k.toLowerCase()))
+    || PEOPLE_DB.jacimara.keywords.some(k => tl.toLowerCase().includes(k.toLowerCase()));
+}
+
+// ─── ELEVENLABS TTS ────────────────────────────────────────────
+async function speak(text) {
+  if (isSpeaking && currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+
+  isSpeaking = true;
+  setState('speaking');
+
+  try {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': ELEVENLABS_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+      })
+    });
+
+    if (!res.ok) throw new Error('ElevenLabs error: ' + res.status);
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    currentAudio = new Audio(url);
+
+    currentAudio.onended = () => {
+      isSpeaking = false;
+      setState('standby');
+      URL.revokeObjectURL(url);
+    };
+
+    currentAudio.onerror = () => {
+      isSpeaking = false;
+      setState('standby');
+    };
+
+    await currentAudio.play();
+  } catch (err) {
+    console.error('TTS error:', err);
+    isSpeaking = false;
+    setState('standby');
+    showToast('Erro no ElevenLabs: ' + err.message, '#ff3c3c');
+  }
+}
+
+// ─── ANTHROPIC API ─────────────────────────────────────────────
+async function askClaude(userMsg) {
+  const res = await fetch(ANTHROPIC_PROXY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      system: `Você é JARVIS, um assistente de inteligência artificial avançado, sofisticado e eficiente. 
+Responda sempre em português brasileiro, de forma concisa, direta e com um tom levemente formal mas acessível.
+Máximo de 3 frases por resposta, a menos que precise de mais para explicar algo importante.
+Não use markdown, apenas texto simples.`,
+      messages: [{ role: 'user', content: userMsg }]
+    })
+  });
+
+  if (!res.ok) throw new Error('Claude API error: ' + res.status);
+  const data = await res.json();
+  return data.content?.[0]?.text || 'Desculpe, não consegui processar sua solicitação.';
+}
+
+// ─── PROCESS INPUT ─────────────────────────────────────────────
+async function processInput(text) {
+  if (!text.trim()) return;
+
+  addMessage('user', text);
+  setState('thinking');
+  addTyping();
+
+  let displayText = '';
+  let speechText = '';
+
+  // Check person lookup
+  const person = findPerson(text);
+
+  if (person) {
+    removeTyping();
+    displayText = person.display;
+    speechText = person.speech;
+    addMessage('jarvis', displayText, true);
+  } else {
+    // Use Claude API
+    try {
+      const reply = await askClaude(text);
+      removeTyping();
+      displayText = reply;
+      speechText = reply;
+      addMessage('jarvis', reply);
+    } catch (err) {
+      removeTyping();
+      const errMsg = 'Sistema temporariamente indisponível. Por favor, tente novamente.';
+      addMessage('jarvis', errMsg);
+      speechText = errMsg;
+      console.error(err);
+    }
+  }
+
+  // Speak the response
+  await speak(speechText);
+}
+
+// ─── SPEECH RECOGNITION ────────────────────────────────────────
+function initRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('Reconhecimento de voz não suportado neste navegador', '#ff3c3c');
+    return null;
+  }
+
+  const rec = new SpeechRecognition();
+  rec.lang = 'pt-BR';
+  rec.continuous = false;
+  rec.interimResults = false;
+  rec.maxAlternatives = 3;
+
+  rec.onresult = async (e) => {
+    const transcript = Array.from(e.results)
+      .map(r => r[0].transcript)
+      .join(' ')
+      .trim();
+
+    console.log('Recognized:', transcript);
+
+    const lower = transcript.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    if (!wakeWordDetected) {
+      // Check for wake word
+      if (lower.includes('jarvis') || lower.includes('jarvis') || lower.includes('jarviz')) {
+        wakeWordDetected = true;
+        setState('listening');
+        showToast('⚡ JARVIS ATIVADO — Pode falar!', 'var(--green)');
+        // Start listening for command
+        setTimeout(() => startListening(true), 400);
+      }
+    } else {
+      // Got the command
+      wakeWordDetected = false;
+      setMicState(false);
+      setState('thinking');
+      await processInput(transcript);
+    }
+  };
+
+  rec.onerror = (e) => {
+    console.error('Speech error:', e.error);
+    if (e.error === 'no-speech') {
+      wakeWordDetected = false;
+      setState('standby');
+    }
+    setMicState(false);
+  };
+
+  rec.onend = () => {
+    if (isListening && wakeWordDetected) {
+      // Still waiting for command, restart
+      setTimeout(() => startListening(true), 200);
+    } else {
+      setMicState(false);
+    }
+  };
+
+  return rec;
+}
+
+function startListening(commandMode = false) {
+  if (!recognition) recognition = initRecognition();
+  if (!recognition) return;
+
+  try {
+    recognition.stop();
+  } catch (e) {}
+
+  setTimeout(() => {
+    try {
+      recognition.start();
+      isListening = true;
+      document.getElementById('micBtn').classList.add('recording');
+
+      if (!commandMode) {
+        setState('standby'); // Wait for wake word
+        showToast('🎙️ Microfone ativo — diga "Jarvis"', 'var(--cyan)');
+      } else {
+        setState('listening');
+      }
+    } catch (e) {
+      console.error('Start error:', e);
+    }
+  }, 150);
+}
+
+function stopListening() {
+  isListening = false;
+  wakeWordDetected = false;
+  if (recognition) {
+    try { recognition.stop(); } catch (e) {}
+  }
+  setMicState(false);
+  setState('standby');
+}
+
+function setMicState(active) {
+  isListening = active;
+  const btn = document.getElementById('micBtn');
+  if (active) {
+    btn.classList.add('recording');
+    btn.textContent = '⏹ PARAR';
+  } else {
+    btn.classList.remove('recording');
+    btn.textContent = '🎤 MIC';
+  }
+}
+
+function toggleMic() {
+  if (isListening) {
+    stopListening();
+  } else {
+    startListening(false);
+  }
+}
+
+// ─── TEXT INPUT ────────────────────────────────────────────────
+function sendText() {
+  const input = document.getElementById('textInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  processInput(text);
+}
+
+document.getElementById('textInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendText();
+});
+
+// ─── CONTINUOUS WAKE WORD LOOP ──────────────────────────────────
+// Auto-start mic on page load after a brief moment
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      showToast('Sistema JARVIS iniciado — Diga "Jarvis" para ativar', 'var(--cyan)');
+      startListening(false);
+    } else {
+      showToast('Use o campo de texto ou botão de microfone', '#ffb400');
+    }
+  }, 1500);
+});
+</script>
+</body>
+</html>
